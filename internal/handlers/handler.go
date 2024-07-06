@@ -35,3 +35,15 @@ func GetPetByID(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, pet)
 }
+
+func DeletePetById(c *gin.Context) {
+	id := c.Param("id")
+	err := service.DeletePetByID(id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "pet not found"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "pet deleted successfully"})
+}

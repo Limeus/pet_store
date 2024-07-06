@@ -11,5 +11,6 @@ func SetupRouter() *gin.Engine {
 	router.GET("/pets", handlers.GetPets)
 	router.GET("/pets/:id", handlers.GetPetByID)
 	router.POST("/pets", handlers.PostPets)
+	router.DELETE("/pets/:id", handlers.DeletePetById)
 	return router
 }

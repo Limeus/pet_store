@@ -22,7 +22,7 @@ func getDBConnection() (*sql.DB, error) {
 	return sql.Open("postgres", psqlconn)
 }
 
-func SavePet(age int, petType string, price float64) {
+func Save(age int, petType string, price float64) {
 	db, err := getDBConnection()
 	CheckError(err)
 	defer db.Close()
@@ -32,7 +32,7 @@ func SavePet(age int, petType string, price float64) {
 	CheckError(e)
 }
 
-func GetPets() []model.Pet {
+func GetAll() []model.Pet {
 	db, err := getDBConnection()
 	CheckError(err)
 	defer db.Close()
@@ -55,7 +55,7 @@ func CheckError(err error) {
 	}
 }
 
-func FindPetById(id string) (model.Pet, bool) {
+func FindById(id string) (model.Pet, bool) {
 	db, err := getDBConnection()
 	if err != nil {
 		return model.Pet{}, false
@@ -84,4 +84,27 @@ func FindPetById(id string) (model.Pet, bool) {
 	}
 
 	return pet, true
+}
+
+func DeleteById(id string) (error, bool) {
+	db, err := getDBConnection()
+	if err != nil {
+		return err, false
+	}
+	defer db.Close()
+
+	query := "DELETE FROM pets WHERE id = $1"
+	result, err := db.Exec(query, id)
+	if err != nil {
+		return err, false
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err, false
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("pet not found"), false
+	}
+	return nil, true
 }
