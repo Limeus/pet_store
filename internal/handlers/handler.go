@@ -25,19 +25,24 @@ func GetPets(c *gin.Context) {
 // @Tags         pets
 // @Accept       json
 // @Produce      json
-// @Param        pet  body      model.Pet  true  "Информация о питомце"
+// @Param        pet  body      model.PostPet  true  "Информация о питомце"
 // @Success      201  {object}  model.Pet
 // @Failure      400  {object}  model.ErrorResponse  "Ошибка при обработке запроса"
 // @Router       /pets [post]
 func PostPets(c *gin.Context) {
-	var newPet model.Pet
+	var newPet model.PostPet
 
 	if err := c.BindJSON(&newPet); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	service.AddPet(newPet)
+	err := service.AddPet(newPet)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, model.ErrorResponse{Message: err.Error()})
+		return
+	}
 	c.IndentedJSON(http.StatusCreated, newPet)
 }
 

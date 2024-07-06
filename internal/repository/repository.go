@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"petStore/internal/converter"
 	"petStore/internal/model"
+	"time"
 )
 
 const (
@@ -22,13 +23,14 @@ func getDBConnection() (*sql.DB, error) {
 	return sql.Open("postgres", psqlconn)
 }
 
-func Save(age int, petType string, price float64) {
+func Save(age int, petType string, price float64, description string) {
 	db, err := getDBConnection()
 	CheckError(err)
 	defer db.Close()
 
-	insertStmt := `insert into pets("age", "type", "price") values($1, $2, $3)`
-	_, e := db.Exec(insertStmt, age, petType, price)
+	dateAdded := time.Now().Format(time.RFC3339)
+	insertStmt := `insert into pets("age", "type", "price", "date_added", "description") values($1, $2, $3, $4, $5)`
+	_, e := db.Exec(insertStmt, age, petType, price, dateAdded, description)
 	CheckError(e)
 }
 
@@ -37,15 +39,16 @@ func GetAll() []model.Pet {
 	CheckError(err)
 	defer db.Close()
 
-	rows, err := db.Query(`SELECT "age", "type", "price" FROM pets`)
+	rows, err := db.Query(`SELECT "age", "type", "price", "date_added", "description" FROM pets`)
 	CheckError(err)
-	defer rows.Close()
 
+	defer rows.Close()
 	var pets []model.Pet
 	pets, err = converter.ToModels(rows)
 	if err != nil {
 		CheckError(err)
 	}
+
 	return pets
 }
 
@@ -65,22 +68,20 @@ func FindById(id string) (model.Pet, bool) {
 	var pet model.Pet
 	var petType string
 
-	query := "SELECT age, type, price FROM pets WHERE id = $1"
-	err = db.QueryRow(query, id).Scan(&pet.Age, &petType, &pet.Price)
+	var description sql.NullString
+	query := "SELECT age, type, price, date_added, description FROM pets WHERE id = $1"
+	err = db.QueryRow(query, id).Scan(&pet.Age, &petType, &pet.Price, &pet.DateAdded, &description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.Pet{}, false
 		}
+
 		return model.Pet{}, false
 	}
-
-	switch petType {
-	case "cat":
-		pet.Type = model.Cat
-	case "dog":
-		pet.Type = model.Dog
-	default:
-		return model.Pet{}, false
+	if description.Valid {
+		pet.Description = description.String
+	} else {
+		pet.Description = ""
 	}
 
 	return pet, true
