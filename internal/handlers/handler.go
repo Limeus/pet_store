@@ -2,11 +2,22 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"petStore/internal/model"
 	"petStore/internal/service"
 )
+
+// PetHandler содержит зависимости для хэндлеров питомцев.
+type PetHandler struct {
+	service service.PetServiceInterface
+}
+
+// NewPetHandler создает новый экземпляр PetHandler.
+func NewPetHandler(service service.PetServiceInterface) PetHandlerInterface {
+	return &PetHandler{service: service}
+}
 
 // GetPets godoc
 // @Summary      Получить список питомцев
@@ -15,8 +26,8 @@ import (
 // @Produce      json
 // @Success      200  {array}  model.Pet
 // @Router   	 /pets [get]
-func GetPets(c *gin.Context) {
-	pets := service.GetPets()
+func (h *PetHandler) GetPets(c *gin.Context) {
+	pets := h.service.GetPets()
 	c.IndentedJSON(http.StatusOK, pets)
 }
 
@@ -30,7 +41,7 @@ func GetPets(c *gin.Context) {
 // @Success      201  {object}  model.Pet
 // @Failure      400  {object}  model.ErrorResponse  "Ошибка при обработке запроса"
 // @Router       /pets [post]
-func PostPets(c *gin.Context) {
+func (h *PetHandler) PostPets(c *gin.Context) {
 	var newPet model.PostPet
 
 	if err := c.BindJSON(&newPet); err != nil {
@@ -38,7 +49,7 @@ func PostPets(c *gin.Context) {
 		return
 	}
 
-	err := service.AddPet(newPet)
+	err := h.service.AddPet(newPet)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, model.ErrorResponse{Message: err.Error()})
@@ -56,9 +67,9 @@ func PostPets(c *gin.Context) {
 // @Success      200  {object}  model.Pet
 // @Failure      404  {object}  model.ErrorResponse  "Питомец не найден"
 // @Router       /pets/{id} [get]
-func GetPetByID(c *gin.Context) {
+func (h *PetHandler) GetPetByID(c *gin.Context) {
 	id := c.Param("id")
-	pet, err := service.GetPetByID(id)
+	pet, err := h.service.GetPetByID(id)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, model.ErrorResponse{Message: "pet not found"})
@@ -77,9 +88,9 @@ func GetPetByID(c *gin.Context) {
 // @Success      200  {object}  model.DeleteResponse  "Питомец успешно удалён"
 // @Failure      404  {object}  model.ErrorResponse  "Питомец не найден"
 // @Router       /pets/{id} [delete]
-func DeletePetById(c *gin.Context) {
+func (h *PetHandler) DeletePetById(c *gin.Context) {
 	id := c.Param("id")
-	err := service.DeletePetByID(id)
+	err := h.service.DeletePetByID(id)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, model.ErrorResponse{Message: "pet not found"})
@@ -101,7 +112,7 @@ func DeletePetById(c *gin.Context) {
 // @Failure      400  {object}  model.ErrorResponse  "Ошибка при обработке запроса"
 // @Failure      404  {object}  model.ErrorResponse  "Питомец не найден"
 // @Router       /pets/{id} [put]
-func UpdatePetById(c *gin.Context) {
+func (h *PetHandler) UpdatePetById(c *gin.Context) {
 	id := c.Param("id")
 	var updatedPet model.UpdatePet
 
@@ -110,10 +121,9 @@ func UpdatePetById(c *gin.Context) {
 		return
 	}
 
-	// Обновляем питомца
-	pet, err := service.UpdatePetByID(id, updatedPet)
+	pet, err := h.service.UpdatePetByID(id, updatedPet)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			c.IndentedJSON(http.StatusNotFound, model.ErrorResponse{Message: "pet not found"})
 		} else {
 			c.IndentedJSON(http.StatusInternalServerError, model.ErrorResponse{Message: err.Error()})

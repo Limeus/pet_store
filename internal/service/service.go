@@ -6,11 +6,19 @@ import (
 	"petStore/internal/repository"
 )
 
-func GetPets() []model.Pet {
+// PetService реализует интерфейс PetServiceInterface.
+type PetService struct{}
+
+// NewPetService создает новый экземпляр PetService.
+func NewPetService() PetServiceInterface {
+	return &PetService{}
+}
+
+func (s *PetService) GetPets() []model.Pet {
 	return repository.GetAll()
 }
 
-func AddPet(newPet model.PostPet) error {
+func (s *PetService) AddPet(newPet model.PostPet) error {
 	if string(newPet.Type) != "cat" && string(newPet.Type) != "dog" {
 		return errors.New("pet must be cat or dog")
 	}
@@ -24,7 +32,7 @@ func AddPet(newPet model.PostPet) error {
 	return nil
 }
 
-func GetPetByID(id string) (model.Pet, error) {
+func (s *PetService) GetPetByID(id string) (model.Pet, error) {
 	pet, found := repository.FindById(id)
 	if !found {
 		return model.Pet{}, errors.New("pet not found")
@@ -32,7 +40,7 @@ func GetPetByID(id string) (model.Pet, error) {
 	return pet, nil
 }
 
-func DeletePetByID(id string) error {
+func (s *PetService) DeletePetByID(id string) error {
 	_, found := repository.DeleteById(id)
 	if !found {
 		return errors.New("pet not found")
@@ -40,19 +48,19 @@ func DeletePetByID(id string) error {
 	return nil
 }
 
-func UpdatePetByID(id string, updatedPet model.UpdatePet) (model.Pet, error) {
-	// Найдите текущего питомца по ID, чтобы убедиться, что он существует
+func (s *PetService) UpdatePetByID(id string, updatedPet model.UpdatePet) (model.Pet, error) {
 	pet, found := repository.FindById(id)
 	if !found {
 		return model.Pet{}, errors.New("pet not found")
 	}
 
-	// Обновите данные питомца
 	pet.Price = updatedPet.Price
 	pet.Description = updatedPet.Description
 
-	// Сохраните изменения в репозитории
-	repository.UpdatePet(id, pet)
+	err := repository.UpdatePet(id, pet)
+	if err != nil {
+		return model.Pet{}, err
+	}
 
 	return pet, nil
 }
