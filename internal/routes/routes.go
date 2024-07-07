@@ -17,7 +17,7 @@ func SetupRouter() *gin.Engine {
 	router.GET("/api/v1/pets/:id", handlers.GetPetByID)
 	router.POST("/api/v1/pets", handlers.PostPets)
 	router.DELETE("/api/v1/pets/:id", handlers.DeletePetById)
-
+	router.PUT("/api/v1/pets/:id", handlers.UpdatePetById)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(files.Handler))
 	router.Run(":8080")
 	return router

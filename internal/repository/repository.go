@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
+	"log"
 	"petStore/internal/converter"
 	"petStore/internal/model"
 	"time"
@@ -75,9 +76,9 @@ func FindById(id string) (model.Pet, bool) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.Pet{}, false
 		}
-
 		return model.Pet{}, false
 	}
+	pet.Type = model.Type(petType)
 	if description.Valid {
 		pet.Description = description.String
 	} else {
@@ -108,4 +109,21 @@ func DeleteById(id string) (error, bool) {
 		return errors.New("pet not found"), false
 	}
 	return nil, true
+}
+
+func UpdatePet(id string, pet model.Pet) error {
+	db, err := getDBConnection()
+	if err != nil {
+		log.Println("Error getting DB connection:", err)
+		return err
+	}
+	defer db.Close()
+
+	query := "UPDATE pets SET price = $1, description = $2 WHERE id = $3"
+	_, err = db.Exec(query, pet.Price, pet.Description, id)
+	if err != nil {
+		log.Println("Error updating pet:", err)
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"petStore/internal/model"
@@ -86,4 +87,39 @@ func DeletePetById(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, model.DeleteResponse{Message: "pet deleted successfully"})
+}
+
+// UpdatePetById godoc
+// @Summary      Обновить питомца по ID
+// @Description  Обновляет информацию о питомце по его идентификатору
+// @Tags         pets
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string     true  "ID питомца"
+// @Param        pet  body      model.UpdatePet  true  "Обновленная информация о питомце"
+// @Success      200  {object}  model.Pet
+// @Failure      400  {object}  model.ErrorResponse  "Ошибка при обработке запроса"
+// @Failure      404  {object}  model.ErrorResponse  "Питомец не найден"
+// @Router       /pets/{id} [put]
+func UpdatePetById(c *gin.Context) {
+	id := c.Param("id")
+	var updatedPet model.UpdatePet
+
+	if err := c.BindJSON(&updatedPet); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	// Обновляем питомца
+	pet, err := service.UpdatePetByID(id, updatedPet)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusNotFound, model.ErrorResponse{Message: "pet not found"})
+		} else {
+			c.IndentedJSON(http.StatusInternalServerError, model.ErrorResponse{Message: err.Error()})
+		}
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, pet)
 }

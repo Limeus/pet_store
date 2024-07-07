@@ -39,3 +39,20 @@ func DeletePetByID(id string) error {
 	}
 	return nil
 }
+
+func UpdatePetByID(id string, updatedPet model.UpdatePet) (model.Pet, error) {
+	// Найдите текущего питомца по ID, чтобы убедиться, что он существует
+	pet, found := repository.FindById(id)
+	if !found {
+		return model.Pet{}, errors.New("pet not found")
+	}
+
+	// Обновите данные питомца
+	pet.Price = updatedPet.Price
+	pet.Description = updatedPet.Description
+
+	// Сохраните изменения в репозитории
+	repository.UpdatePet(id, pet)
+
+	return pet, nil
+}
